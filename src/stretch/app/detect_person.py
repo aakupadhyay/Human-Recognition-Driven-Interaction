@@ -17,12 +17,15 @@ import mediapipe as mp
 import cv2
 
 from stretch.agent import RobotAgent, RobotClient
+from stretch.core.task import Task
+from stretch.agent.task.emote.follow_person import FindPerson
 from stretch.perception import create_semantic_sensor
 
 # print("Starting Face Detection -- Camera rotation and finding location of the person")
 
 pending_frames = {}
 pending_obs = {}
+face_detected = False
 
 BaseOptions = mp.tasks.BaseOptions
 FaceDetector = mp.tasks.vision.FaceDetector
@@ -34,6 +37,7 @@ VisionRunningMode = mp.tasks.vision.RunningMode
 def print_result(result: FaceDetectorResult, output_image: mp.Image, timestamp_ms: int):
         frame = pending_frames.pop(timestamp_ms, None)
         observation = pending_obs.pop(timestamp_ms, None)
+        global face_detected
 
         print("Callback timestamp:", timestamp_ms)
         print("face detector result:", result)
@@ -69,6 +73,7 @@ def print_result(result: FaceDetectorResult, output_image: mp.Image, timestamp_m
             print(f"Face position (camera frame): X={X:.2f}, Y={Y:.2f}, Z={Z:.2f}")
 
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            face_detected = True
 
 options = FaceDetectorOptions(
     base_options=BaseOptions(model_asset_path='/home/aakriti/demo/stretch_ai/src/stretch/app/blaze_face_short_range.tflite'),
@@ -76,6 +81,58 @@ options = FaceDetectorOptions(
     result_callback=print_result)
 
 detector = FaceDetector.create_from_options(options)
+
+# ---------------- Detect Face and interact -----------------
+
+
+def scan_head_positions(
+    robot,
+    agent,
+    head_positions,
+    sleep_time,
+):
+    """
+    Move robot head through predefined pan/tilt positions, capture observations,
+    and run asynchronous MediaPipe detection.
+
+    Args:
+        agent: Agent with update() method
+        head_positions (list of tuples): [(pan, tilt), ...] in radians
+        sleep_time (float): Delay between head movements (seconds)
+    """
+    for pan, tilt in head_positions:
+        if face_detected:
+            print("Detected Face, Starting Interaction")
+            return
+        
+        # Move head
+        robot.head_to(head_pan=pan, head_tilt=tilt, blocking=True)
+
+        # Update agent state
+        agent.update()
+
+        # Get observation
+        observation = robot.get_observation()
+        frame = observation.rgb.copy()
+
+        # Convert to MediaPipe image
+        mp_image = mp.Image(
+            image_format=mp.ImageFormat.SRGB,
+            data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB),
+        )
+
+        # Timestamp (ms)
+        timestamp_ms = int(time.time() * 1000)
+
+        # Store pending data
+        pending_frames[timestamp_ms] = frame
+        pending_obs[timestamp_ms] = observation
+
+        # Run async detection
+        detector.detect_async(mp_image, timestamp_ms)
+        print("Frame timestamp:", timestamp_ms)
+
+        time.sleep(sleep_time)
 
 # ---------------- Main function ----------------
 @click.command()
@@ -98,7 +155,7 @@ def main(
     run_semantic_segmentation: bool = False,
     show_open3d: bool = False,
     device_id: int = 0,
-    verbose: bool = False,
+    verbose: bool = False,on_floor:bool = False,
 ):
 
     # Create robot
@@ -114,39 +171,64 @@ def main(
         semantic_sensor = None
     agent = RobotAgent(robot, robot.parameters, semantic_sensor, enable_realtime_updates=False)
 
-    observation = robot.get_observation()
+    # observation = robot.get_observation()
     # print("Printing Camera Pose",observation.camera_pose)
     robot.move_to_nav_posture()
 
     if robot.parameters["agent"]["sweep_head_on_update"]:
         agent.update()
     else:
-                
-        head_positions = [
-            (0, 0), (0, -np.pi/4), (-np.pi/4, -np.pi/4), 
-            (-np.pi/2, -np.pi/4), (-3*np.pi/4, -np.pi/4), (-np.pi, -np.pi/4),
-            (0,0), (np.pi/4,0), (0,0), (-np.pi/4,0), (-np.pi/2,0), (-3*np.pi/4,0), (-np.pi,0), (0,0)
-        ]
-
-        for pan, tilt in head_positions:
-            robot.head_to(head_pan=pan, head_tilt=tilt, blocking=True)
-            agent.update()
+        
+        on_floor = FindPerson(agent)
+        front = FindPerson(agent, 0)
+        
+        task = on_floor.get_task(add_rotate=False)
+        task.run()
+        
+        if on_floor.is_person_detected():
+            print("Person found on the floor")
+            agent.robot_say("I found person on the floor")
+            time.sleep(1.0)
+            agent.robot_say("Are you okay")
+            time.sleep(0.5)
+            agent.robot_say("Do you need help")
+        else:
+            # print("No person found")
+            task = front.get_task(add_rotate=False)
+            task.run()
             
-            observation = robot.get_observation() 
+            head_positions = [
+                (0, 0), (0, -np.pi/4), (-np.pi/4, -np.pi/4), 
+                (-np.pi/2, -np.pi/4), (-3*np.pi/4, -np.pi/4), (-np.pi, -np.pi/4),
+                (0,0), (np.pi/4,0), (0,0), (-np.pi/4,0), (-np.pi/2,0), (-3*np.pi/4,0), (-np.pi,0), (0,0)
+            ]
+            scan_head_positions(robot=robot, agent=agent, head_positions=head_positions, sleep_time=1.5)
+            agent.robot_say("Hello I am Stretch Robot")
+            time.sleep(0.5)
+            agent.robot_say("How may I help you today")
+        
+        # move head, update map, detect person, navigate to person, detect face, interact facing them
+        
 
-            frame = observation.rgb.copy()
+        # for pan, tilt in head_positions:
+        #     robot.head_to(head_pan=pan, head_tilt=tilt, blocking=True)
+        #     agent.update()
+            
+        #     observation = robot.get_observation() 
 
-            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        #     frame = observation.rgb.copy()
 
-            timestamp_ms = int(time.time() * 1000)
+        #     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
-            pending_frames[timestamp_ms] = frame
-            pending_obs[timestamp_ms] = observation
+        #     timestamp_ms = int(time.time() * 1000)
 
-            detector.detect_async(mp_image, timestamp_ms)
-            print("Frame timestamp:", timestamp_ms)
+        #     pending_frames[timestamp_ms] = frame
+        #     pending_obs[timestamp_ms] = observation
+
+        #     detector.detect_async(mp_image, timestamp_ms)
+        #     print("Frame timestamp:", timestamp_ms)
                     
-            time.sleep(1.5)
+        #     time.sleep(1.5)
 
 
     if show_open3d:

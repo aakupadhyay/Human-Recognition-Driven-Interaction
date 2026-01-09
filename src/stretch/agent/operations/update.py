@@ -87,8 +87,9 @@ class UpdateOperation(ManagedOperation):
         # Now update the world
         self.update(move_head=self.move_head, tilt=self.tilt)
 
-        # Delete observations near us, since they contain the arm!!
-        self.agent.get_voxel_map().delete_obstacles(point=xyt[:2], radius=0.7, force_update=True)
+        if self.tilt != 0.0:
+            # Delete observations near us, since they contain the arm!!
+            self.agent.get_voxel_map().delete_obstacles(point=xyt[:2], radius=0.7, force_update=True)
 
         # Notify and move the arm back to normal. Showing the map is optional.
         print(f"So far we have found: {len(self.agent.get_voxel_map().instances)} objects.")
