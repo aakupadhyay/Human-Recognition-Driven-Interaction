@@ -82,14 +82,14 @@ class UpdateOperation(ManagedOperation):
             self.robot.move_to_manip_posture()
             time.sleep(2.0)
         self.robot.arm_to([0.0, self.arm_height, 0.05, 0, -np.pi / 4, 0], blocking=True)
-        xyt = self.robot.get_base_pose()
+        # xyt = self.robot.get_base_pose()
 
         # Now update the world
         self.update(move_head=self.move_head, tilt=self.tilt)
-
-        if self.tilt != 0.0:
-            # Delete observations near us, since they contain the arm!!
-            self.agent.get_voxel_map().delete_obstacles(point=xyt[:2], radius=0.7, force_update=True)
+        
+        xyt = self.robot.get_base_pose()
+        # Delete observations near us, since they contain the arm!!
+        self.agent.get_voxel_map().delete_obstacles(point=xyt[:2], radius=0.7, force_update=True)
 
         # Notify and move the arm back to normal. Showing the map is optional.
         print(f"So far we have found: {len(self.agent.get_voxel_map().instances)} objects.")

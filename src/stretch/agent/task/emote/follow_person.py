@@ -8,11 +8,12 @@
 # license information maybe found below, if so.
 
 import numpy as np
+import mediapipe as mp
 
 from stretch.agent.operations import (
     # ExtendArm,
     NavigateToObjectOperation,
-    # OpenGripper,
+    FaceDetectionOperation,
     SpeakOperation,
     UpdateOperation,
 )
@@ -23,12 +24,13 @@ from stretch.core.task import Task
 class FindPerson:
     """Find a person, navigate to them, and extend the arm toward them"""
 
-    def __init__(self, agent: RobotAgent, tilt: float = -1.0 * np.pi / 8.0, target_object: str = "person") -> None:
+    def __init__(self, agent: RobotAgent, tilt: float = -1.0 * np.pi / 3.0, target_object: str = "person") -> None:
         # super().__init__(agent)
         self.agent = agent
 
         self.target_object = target_object
         self.tilt = tilt
+        self.detect_person = False
 
         # Sync these things
         self.robot = self.agent.robot
@@ -44,21 +46,6 @@ class FindPerson:
         self.current_receptacle = None
         self.agent.reset_object_plans()
     
-    def is_person_detected(self) -> bool:
-        """
-        Returns True if a person instance exists in the current voxel map.
-        """
-        instances = self.agent.get_voxel_map().instances  # always fresh
-
-        if instances is None:
-            return False
-
-        for inst in instances:
-            if inst.name.lower() == self.target_object.lower():
-                return True
-
-        return False
-
     def get_task(self, add_rotate: bool = False, mode: str = "one_shot") -> Task:
         """Create a task plan with loopbacks and recovery from failure. The robot will explore the environment, find objects, and pick them up
 
@@ -77,12 +64,12 @@ class FindPerson:
 
         task = Task()
 
-        update = UpdateOperation("update_scene", self.agent, retry_on_failure=True)
+        update = UpdateOperation("update_scene", self.agent, retry_on_failure=False)
         update.configure(
             move_head=True,
             target_object=self.target_object,
             show_map_so_far=False,  # Uses Open3D display (blocking)
-            clear_voxel_map=False,  # True,
+            clear_voxel_map=True,  # True,
             show_instances_detected=False,  # Uses OpenCV image display (blocking)
             match_method="name",  # "feature",
             arm_height=0.6,
@@ -103,6 +90,7 @@ class FindPerson:
             parent=found_a_person,
             on_cannot_start=update,
             to_receptacle=False,
+            for_manipulation =False,
         )
 
         look_for_face = SpeakOperation(
@@ -112,70 +100,73 @@ class FindPerson:
             on_cannot_start=update,
         )
         look_for_face.configure(
-            message="I navigated to the person. Now I am going to find their face to interact with them.",
+            message="I navigated to the person. I am going to look for their face to ask a question.",
             sleep_time=2.0,
         )
         
-        # ready_to_interact = SpeakOperation(
-        #     name="ready_to_interact", agent=self.agent, parent=look_for_face, on_cannot_start=update
-        # )
-        # ready_to_interact.configure(
-        #     message="I have finished handing over the object.", sleep_time=5.0
-        # )
+        face_op = FaceDetectionOperation(
+            name="detect_face",
+            agent=self.agent,
+            parent=look_for_face,
+            on_cannot_start=update,
+        )
+        BaseOptions = mp.tasks.BaseOptions
+        FaceDetector = mp.tasks.vision.FaceDetector
+        FaceDetectorOptions = mp.tasks.vision.FaceDetectorOptions
+        VisionRunningMode = mp.tasks.vision.RunningMode
 
-        # extend_arm = ExtendArm(
-        #     name="extend_arm",
-        #     agent=self.agent,
-        #     parent=ready_to_extend_arm,
-        #     on_cannot_start=update,
-        # )
-        # extend_arm.configure(arm_extension=0.2)
+        options = FaceDetectorOptions(
+            base_options=BaseOptions(
+                model_asset_path="/home/aakriti/demo/stretch_ai/src/stretch/app/blaze_face_short_range.tflite"
+            ),
+            running_mode=VisionRunningMode.LIVE_STREAM,
+            result_callback=face_op.result_callback,  # ← bind callback here
+        )
 
-        # ready_to_open_gripper = SpeakOperation(
-        #     name="ready_to_open_gripper",
-        #     agent=self.agent,
-        #     parent=extend_arm,
-        #     on_cannot_start=update,
-        # )
-        # ready_to_open_gripper.configure(
-        #     message="I am now going to open my gripper to release the object.", sleep_time=2.0
-        # )
-
-        # open_gripper = OpenGripper(
-        #     name="open_gripper",
-        #     agent=self.agent,
-        #     parent=ready_to_open_gripper,
-        #     on_cannot_start=update,
-        # )
-
-        # finished_handover = SpeakOperation(
-        #     name="finished_handover", agent=self.agent, parent=open_gripper, on_cannot_start=update
-        # )
-        # finished_handover.configure(
-        #     message="I have finished handing over the object.", sleep_time=5.0
-        # )
-
-        # retract_arm = ExtendArm(
-        #     name="retract_arm",
-        #     agent=self.agent,
-        #     parent=finished_handover,
-        #     on_cannot_start=update,
-        # )
-        # retract_arm.configure(arm_extension=0.05)
-
-        # task.add_operation(go_to_navigation_mode)
-        # if add_rotate:
-        #    task.add_operation(rotate_in_place)
+        detector = FaceDetector.create_from_options(options)
+        
+        face_op.configure(
+            detector=detector,
+            pan_start=np.pi / 3,
+            pan_step=-np.pi / 6,
+            num_steps=11,
+            tilt=0.0,
+            sleep_time=1.5,
+            timeout=100.0,
+        )
+        
+        on_floor_person = SpeakOperation(
+            name="on_floor",
+            agent=self.agent,
+            parent=look_for_face,
+            on_cannot_start=update,
+        )
+        on_floor_person.configure(
+            message="I found a person on the floor. Are you okay",
+            sleep_time=2.0,
+        )
+        
+        interact_person = SpeakOperation(
+            name="talking",
+            agent=self.agent,
+            parent=face_op,
+            on_cannot_start=update,
+        )
+        interact_person.configure(
+            message="Hello I am Stretch robot. How may I help you today",
+            sleep_time=2.0,
+        )
+        
         task.add_operation(update)
         task.add_operation(found_a_person)
         task.add_operation(go_to_object)
         task.add_operation(look_for_face)
-        # task.add_operation(ready_to_extend_arm)
-        # task.add_operation(extend_arm)
-        # task.add_operation(ready_to_open_gripper)
-        # task.add_operation(open_gripper)
-        # task.add_operation(finished_handover)
-        # task.add_operation(retract_arm)
+        
+        if self.tilt == -1.0 * np.pi / 6.0:
+            task.add_operation(face_op)
+            task.add_operation(interact_person)
+        else:
+            task.add_operation(on_floor_person)
 
         # Terminate on a successful place
         return task

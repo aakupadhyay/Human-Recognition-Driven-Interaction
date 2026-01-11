@@ -34,3 +34,4 @@ from .speak import SpeakOperation
 from .switch_mode import GoToNavOperation
 from .update import UpdateOperation
 from .utility_operations import SetCurrentObjectOperation, SetCurrentReceptacleOperation
+from .detect_face import FaceDetectionOperation
