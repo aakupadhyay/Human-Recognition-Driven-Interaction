@@ -96,11 +96,37 @@ class NavigateToObjectOperation(ManagedOperation):
         self.robot.execute_trajectory(self.plan, final_timeout=10.0)
 
         # Orient the robot towards the object and use the end effector camera to pick it up
-        xyt = self.plan.trajectory[-1].state
+        # xyt = self.plan.trajectory[-1].state
         # self.robot.move_base_to(xyt + np.array([0, 0, np.pi / 2]), blocking=True, timeout=30.0)
-        if self.be_precise:
-            self.warn("Moving again to make sure we're close enough to the goal.")
-            self.robot.move_base_to(xyt, blocking=True, timeout=30.0)
+        # if self.be_precise:
+        #     self.warn("Moving again to make sure we're close enough to the goal.")
+        #     self.robot.move_base_to(xyt, blocking=True, timeout=30.0)
+        
+        # ---- 2. LOCAL APPROACH (GETS CLOSER TO OBJECT) ----
+        obj_xy = np.array(self.get_target().get_center()[:2], dtype=float)
+        base_xy = np.array(self.robot.get_base_pose()[:2], dtype=float)
+
+        direction = obj_xy - base_xy
+        dist = np.linalg.norm(direction)
+        
+        if dist < 0.5:
+            self.warn("Too close to object, skipping approach.")
+            return
+
+        if dist > 0.3:
+            direction = direction / dist
+
+            approach_dist = min(0.8, dist - 0.5)
+
+            goal_xy = base_xy + approach_dist * direction
+
+            theta = math.atan2(direction[1], direction[0])
+
+            self.robot.move_base_to(
+                np.array([goal_xy[0], goal_xy[1], theta]),
+                blocking=True,
+                timeout=30.0,
+            )
 
     def was_successful(self):
         """This will be successful if we got within a reasonable distance of the target object."""

@@ -167,6 +167,14 @@ class UpdateOperation(ManagedOperation):
             print(
                 f" - Found instance {i} with name {name} and global id {instance.global_id}: score = {score}."
             )
+            
+            # ---- CHECK INSTANCE SCORE ----
+            if score < 0.9:
+                self.warn(
+                    f"Skipping instance {i} ({name}) due to low confidence: {score:.2f} < 0.9"
+                )
+                continue
+            # -------------------------
 
             if self.show_instances_detected:
                 self.show_instance(instance)

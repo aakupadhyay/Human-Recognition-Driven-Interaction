@@ -101,7 +101,7 @@ class FindPerson:
         )
         look_for_face.configure(
             message="I navigated to the person. I am going to look for their face to ask a question.",
-            sleep_time=2.0,
+            sleep_time=5.0,
         )
         
         face_op = FaceDetectionOperation(
@@ -129,7 +129,7 @@ class FindPerson:
             detector=detector,
             pan_start=np.pi / 3,
             pan_step=-np.pi / 6,
-            num_steps=11,
+            num_steps=10, #11
             tilt=0.0,
             sleep_time=1.5,
             timeout=100.0,
@@ -163,11 +163,14 @@ class FindPerson:
         task.add_operation(look_for_face)
         
         if self.tilt == -1.0 * np.pi / 6.0:
+            chosen_op = face_op
             task.add_operation(face_op)
             task.add_operation(interact_person)
         else:
+            chosen_op = on_floor_person
             task.add_operation(on_floor_person)
 
+        look_for_face.on_success = chosen_op
         # Terminate on a successful place
         return task
 
