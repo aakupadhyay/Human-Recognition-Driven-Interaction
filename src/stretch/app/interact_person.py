@@ -13,6 +13,7 @@
 import time
 import click
 import numpy as np
+import random
 # import threading
 import rclpy
 import cv2
@@ -44,7 +45,7 @@ def main(
     run_semantic_segmentation: bool = False,
     show_open3d: bool = False,
     device_id: int = 0,
-    verbose: bool = False,on_floor:bool = False,
+    verbose: bool = False,
 ):
 
     # Create robot
@@ -72,28 +73,66 @@ def main(
        
     on_floor = FindPerson(agent)
     front = FindPerson(agent, -1.0 * np.pi / 6.0)
-    
-    task1 = on_floor.get_task(add_rotate=False)
-    
-    try:
-        success = task1.run()
-    except Exception as e:
-        print("Task1 failed:", e)
-        success = False 
-    
-    if not success:
-        task2 = front.get_task(add_rotate=False)
+
+    success = False
+    MAX_ATTEMPTS = 2
+    attempt = 0
+
+    while not success and attempt < MAX_ATTEMPTS:
+        attempt += 1
+        print(f"\n=== Search attempt {attempt}/{MAX_ATTEMPTS} ===")
+
+        # Try floor search
         try:
-            check = task2.run()
+            success = on_floor.get_task(add_rotate=False).run()
+        except Exception as e:
+            print("Task1 failed:", e)
+            success = False
+
+        if success:
+            break
+
+        # Try frontal search
+        try:
+            success = front.get_task(add_rotate=False).run()
         except Exception as e:
             print("Task2 failed:", e)
-            check = False
-        
-        if not check:
-            time.sleep(3.0)
-            agent.robot_say("I couldn't find person at my current position")
-            time.sleep(3.0)
-            agent.robot_say("Moving to another location")
+            success = False
+
+        if success:
+            break
+
+        # Recovery
+        time.sleep(3.0)
+        agent.robot_say("I couldn't find anyone here. Moving to another location.")
+        # time.sleep(2.0)
+
+        space = agent.space
+        current = robot.get_base_pose()
+        candidate = None
+        poses = []
+        MAX_CANDIDATES = 10
+
+        for i, pose in enumerate(space.sample_closest_frontier(current)):
+            if space.is_valid(pose):
+                poses.append(pose)
+            if len(poses) >= MAX_CANDIDATES:
+                break
+
+        if not poses:
+            raise RuntimeError("No valid frontier poses found")
+
+        candidate = random.choice(poses)
+
+        if candidate is None:
+            agent.robot_say("I cannot find a safe place to move.")
+            break
+
+        robot.move_base_to(candidate, blocking=True, timeout=30.0)
+
+    # Final outcome
+    if not success:
+        agent.robot_say("I couldn't find anyone nearby.")
 
 
     if show_open3d:
