@@ -69,7 +69,7 @@ class FindPerson:
             move_head=True,
             target_object=self.target_object,
             show_map_so_far=False,  # Uses Open3D display (blocking)
-            clear_voxel_map=True,  # True,
+            clear_voxel_map=False,  # True,
             show_instances_detected=False,  # Uses OpenCV image display (blocking)
             match_method="name",  # "feature",
             arm_height=0.6,

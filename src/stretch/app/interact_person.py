@@ -15,8 +15,8 @@ import click
 import numpy as np
 import random
 # import threading
-import rclpy
-import cv2
+# import rclpy
+# import cv2
 
 from stretch.agent import RobotAgent, RobotClient
 # from stretch.core.task import Task
@@ -75,7 +75,7 @@ def main(
     front = FindPerson(agent, -1.0 * np.pi / 6.0)
 
     success = False
-    MAX_ATTEMPTS = 2
+    MAX_ATTEMPTS = 1
     attempt = 0
 
     while not success and attempt < MAX_ATTEMPTS:
@@ -103,7 +103,7 @@ def main(
             break
 
         # Recovery
-        time.sleep(3.0)
+        # time.sleep(3.0)
         agent.robot_say("I couldn't find anyone here. Moving to another location.")
         # time.sleep(2.0)
 
@@ -133,7 +133,7 @@ def main(
     # Final outcome
     if not success:
         agent.robot_say("I couldn't find anyone nearby.")
-
+    
 
     if show_open3d:
         agent.show_map()
@@ -145,8 +145,8 @@ def main(
         
     agent.stop_realtime_updates()
     robot.stop()
-    rclpy.shutdown()
-    cv2.destroyAllWindows()
+    # rclpy.shutdown()
+    # cv2.destroyAllWindows()
     
 
 

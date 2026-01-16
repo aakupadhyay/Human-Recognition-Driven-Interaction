@@ -850,7 +850,7 @@ class RobotAgent:
             # Pause a bit first to make sure the robot is in the right posture
             time.sleep(self._before_head_motion_sleep_t)
             # num_steps = 5
-            num_steps = 11
+            num_steps = 9 #11
         else:
             num_steps = 1
 

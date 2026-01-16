@@ -34,6 +34,7 @@ class FaceDetectionOperation(ManagedOperation):
 
         self.sleep_time = sleep_time
         self.timeout = timeout
+        self._ts = 0
 
         # Async state
         self.face_detected = False
@@ -49,48 +50,51 @@ class FaceDetectionOperation(ManagedOperation):
         robot = self.agent.robot
         start_time = time.time()
         
-        try:
-            for i in range(self.num_steps):
-                if time.time() - start_time > self.timeout:
-                    self.warn("Face detection timed out.")
-                    return
+        # try:
+        for i in range(self.num_steps):
+            if time.time() - start_time > self.timeout:
+                self.warn("Face detection timed out.")
+                return
 
-                if self.face_detected:
-                    self._successful = True
-                    self.cheer("Face detected. Stopping scan.")
-                    return
+            if self.face_detected:
+                self._successful = True
+                self.cheer("Face detected. Stopping scan.")
+                return
 
-                pan = self.pan_start + i * self.pan_step
+            pan = self.pan_start + i * self.pan_step
 
-                robot.head_to(
-                    head_pan=pan,
-                    head_tilt=self.tilt,
-                    blocking=True,
-                )
+            robot.head_to(
+                head_pan=pan,
+                head_tilt=self.tilt,
+                blocking=True,
+            )
 
-                self.agent.update()
-                obs = robot.get_observation()
-                frame = obs.rgb.copy()
+            # self.agent.update()
+            obs = robot.get_observation()
+            frame = obs.rgb.copy()
 
-                mp_image = mp.Image(
-                    image_format=mp.ImageFormat.SRGB,
-                    data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB),
-                )
+            mp_image = mp.Image(
+                image_format=mp.ImageFormat.SRGB,
+                data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB),
+            )
 
-                timestamp_ms = int(time.time() * 1000)
-                self.pending_frames[timestamp_ms] = frame
-                self.pending_obs[timestamp_ms] = obs
+            self._ts +=1
+            timestamp_ms = self._ts #int(time.time() * 1000)
+            self.pending_frames[timestamp_ms] = frame
+            self.pending_obs[timestamp_ms] = obs
 
-                self.detector.detect_async(mp_image, timestamp_ms)
-                time.sleep(self.sleep_time)
+            self.detector.detect_async(mp_image, timestamp_ms)
+            time.sleep(self.sleep_time)
 
-            # Final wait for async callback
-            self._wait_for_callback(start_time)
+        # Final wait for async callback
+        self._wait_for_callback(start_time)
+        self.detector.close()
+        self.detector = None
             
-        finally:
-            if hasattr(self, "detector") and self.detector is not None:
-                self.detector.close()
-                self.detector = None
+        # finally:
+        #     if hasattr(self, "detector") and self.detector is not None:
+        #         self.detector.close()
+        #         self.detector = None
         
 
     def _wait_for_callback(self, start_time):
