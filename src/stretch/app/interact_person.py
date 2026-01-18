@@ -13,7 +13,8 @@
 import time
 import click
 import numpy as np
-import random
+# import random
+import math
 # import threading
 # import rclpy
 # import cv2
@@ -73,16 +74,65 @@ def main(
        
     on_floor = FindPerson(agent)
     front = FindPerson(agent, -1.0 * np.pi / 6.0)
-
-    success = False
+    
     MAX_ATTEMPTS = 1
-    attempt = 0
+    MAX_CANDIDATES = 10
+    VISITED_DIST_THRESH = 0.5  # 0.4-0.7 meters
 
+    def pose_xy(p):
+        """
+        Extract (x, y) from Pose or Tensor
+        """
+        # Tensor / numpy
+        if hasattr(p, "__len__"):
+            return float(p[0]), float(p[1])
+
+        # Pose-like object
+        return float(p.x), float(p.y)
+
+
+    def pose_distance(p1, p2):
+        x1, y1 = pose_xy(p1)
+        x2, y2 = pose_xy(p2)
+        return math.hypot(x1 - x2, y1 - y2)
+    
+    def min_distance_to_set(pose, visited_xy):
+        x, y = pose_xy(pose)
+        return min(
+            math.hypot(x - vx, y - vy)
+            for vx, vy in visited_xy
+        ) if visited_xy else float("inf")
+
+    def score_frontier(pose, current_pose, visited_poses,
+                   alpha=1.0, beta=1.5, gamma=0.0):
+        """
+        Higher score = better frontier
+        """
+        d_robot = pose_distance(pose, current_pose)
+        d_visited = min_distance_to_set(pose, visited_poses)
+
+        # we don't query clearance yet -- future work
+        d_obstacle = 0.0  # set >0 if you can query clearance
+
+        score = (
+            alpha * d_robot +
+            beta * d_visited -
+            gamma * d_obstacle
+        )
+        return score
+
+    # ---------------- TIMER START ----------------
+    start_time = time.time()
+
+    visited_poses = []   # stores previously visited base poses
+    attempt = 0
+    success = False
+    
     while not success and attempt < MAX_ATTEMPTS:
         attempt += 1
         print(f"\n=== Search attempt {attempt}/{MAX_ATTEMPTS} ===")
 
-        # Try floor search
+        # ---------- Floor search ----------
         try:
             success = on_floor.get_task(add_rotate=False).run()
         except Exception as e:
@@ -92,7 +142,7 @@ def main(
         if success:
             break
 
-        # Try frontal search
+        # ---------- Frontal search ----------
         try:
             success = front.get_task(add_rotate=False).run()
         except Exception as e:
@@ -102,33 +152,64 @@ def main(
         if success:
             break
 
-        # Recovery
-        # time.sleep(3.0)
+        # ---------- Recovery ----------
         agent.robot_say("I couldn't find anyone here. Moving to another location.")
-        # time.sleep(2.0)
-
+        
         space = agent.space
         current = robot.get_base_pose()
-        candidate = None
-        poses = []
-        MAX_CANDIDATES = 10
+        current_xy = pose_xy(current)
 
-        for i, pose in enumerate(space.sample_closest_frontier(current)):
-            if space.is_valid(pose):
-                poses.append(pose)
-            if len(poses) >= MAX_CANDIDATES:
+        # Mark current pose as visited
+        visited_poses.append(current_xy)
+
+        frontier_candidates = []
+
+        for pose in space.sample_closest_frontier(current):
+            if not space.is_valid(pose):
+                continue
+
+            if any(pose_distance(pose, v) < VISITED_DIST_THRESH for v in visited_poses):
+                continue
+
+            frontier_candidates.append(pose)
+
+            if len(frontier_candidates) >= MAX_CANDIDATES:
                 break
 
-        if not poses:
-            raise RuntimeError("No valid frontier poses found")
-
-        candidate = random.choice(poses)
-
-        if candidate is None:
-            agent.robot_say("I cannot find a safe place to move.")
+        if not frontier_candidates:
+            agent.robot_say("I have explored all reachable frontiers.")
             break
 
-        robot.move_base_to(candidate, blocking=True, timeout=30.0)
+        # ---------- SCORING ----------
+        scored_frontiers = []
+        for pose in frontier_candidates:
+            score = score_frontier(
+                pose,
+                current_pose=current,
+                visited_poses=visited_poses,
+                alpha=1.0,   # exploration
+                beta=1.5    # revisit avoidance
+            )
+            scored_frontiers.append((score, pose))
+
+        scored_frontiers.sort(key=lambda x: x[0], reverse=True)
+        best_score, candidate = scored_frontiers[0]
+
+        print(f"Moving to frontier with score {best_score:.2f}")
+
+        try:
+            robot.move_base_to(candidate, blocking=True, timeout=30.0)
+        except Exception as e:
+            print("Navigation failed:", e)
+
+    # ---------------- TIMER END ----------------
+    end_time = time.time()
+    total_time = end_time - start_time
+
+    print("\n=== Task Summary ===")
+    print(f"Success: {success}")
+    print(f"Attempts: {attempt}")
+    print(f"Total time taken: {total_time:.2f} seconds")
 
     # Final outcome
     if not success:
