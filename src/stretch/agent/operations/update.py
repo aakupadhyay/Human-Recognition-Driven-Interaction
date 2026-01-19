@@ -136,16 +136,35 @@ class UpdateOperation(ManagedOperation):
         # Find the object we want to manipulate
         if self.match_method == "name":
             # look for an exact match between the target_object string and the name string for an instance
-            instances = self.agent.get_instances()
+            # instances = self.agent.get_instances()
+            # matching_instances = []
+            # for instance in instances:
+            #     name = self.agent.semantic_sensor.get_class_name_for_id(instance.category_id)
+            #     print(f"found instance with name = {name}")
+            #     if name == self.target_object:
+            #         print(f"name matches target_object! ({name} = {self.target_object})")
+            #         matching_instances.append(instance)
+            # scores = np.ones(len(matching_instances))
+            instances_all = self.agent.get_instances()
             matching_instances = []
-            for instance in instances:
+            matching_scores = []
+
+            for instance in instances_all:
                 name = self.agent.semantic_sensor.get_class_name_for_id(instance.category_id)
                 print(f"found instance with name = {name}")
+
                 if name == self.target_object:
                     print(f"name matches target_object! ({name} = {self.target_object})")
                     matching_instances.append(instance)
-            scores = np.array([inst.score for inst in instances])
-            # scores = np.ones(len(matching_instances))
+                    matching_scores.append(instance.score)  # <-- score stays aligned
+                
+                print(
+                    f"DEBUG: instance global_id={instance.global_id}, "
+                    f"instance.score={instance.score}"
+                )
+
+            instances = matching_instances
+            scores = np.array(matching_scores)
             instances = matching_instances
         elif self.match_method == "class":
             instances = self.agent.get_voxel_map().instances.get_instances_by_class(
@@ -171,9 +190,9 @@ class UpdateOperation(ManagedOperation):
             )
             
             # ---- CHECK INSTANCE SCORE ----
-            if score < 0.9:
+            if score < 0.6:
                 self.warn(
-                    f"Skipping instance {i} ({name}) due to low confidence: {score:.2f} < 0.9"
+                    f"Skipping instance {i} ({name}) due to low confidence: {score:.2f} < 0.6"
                 )
                 continue
             # -------------------------
