@@ -144,13 +144,15 @@ class UpdateOperation(ManagedOperation):
                 if name == self.target_object:
                     print(f"name matches target_object! ({name} = {self.target_object})")
                     matching_instances.append(instance)
-            scores = np.ones(len(matching_instances))
+            scores = np.array([inst.score for inst in instances])
+            # scores = np.ones(len(matching_instances))
             instances = matching_instances
         elif self.match_method == "class":
             instances = self.agent.get_voxel_map().instances.get_instances_by_class(
                 self.target_object
             )
-            scores = np.ones(len(instances))
+            scores = np.array([inst.score for inst in instances])
+            # scores = np.ones(len(instances))
         elif self.match_method == "feature":
             scores, instances = self.agent.get_instances_from_text(self.target_object)
             # self.agent.get_voxel_map().show(orig=np.zeros(3), xyt=start, footprint=self.robot_model.get_footprint(), planner_visuals=True)

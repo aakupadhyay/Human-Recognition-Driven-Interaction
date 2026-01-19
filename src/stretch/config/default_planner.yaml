@@ -149,13 +149,13 @@ motion_planner:
   shortcut_iter: 100
   # Parameters for frontier exploration using the motion planner.
   frontier:
-    dilate_frontier_size: 3  # Used to shrink the frontier back from the edges of the world
-    dilate_obstacle_size: 5  # Used when selecting goals and computing what the "frontier" is 
+    dilate_frontier_size: 2 #4.5  # Used to shrink the frontier back from the edges of the world
+    dilate_obstacle_size: 4  #7 Used when selecting goals and computing what the "frontier" is 
     default_expand_frontier_size: 10 # margin along the frontier where final robot position can be
     # Distance away you search for frontier points
-    min_dist: 0.4 # 0.3-0.6, 0.1
+    min_dist: 2.0 # 0.5, 0.3-0.6, 0.1
     # Subsampling frontier space at this discretization
-    step_dist: 0.25 #0.2
+    step_dist: 0.45 #0.2
   goals:
     manipulation_radius: 0.66
 
