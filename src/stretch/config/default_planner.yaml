@@ -151,7 +151,7 @@ motion_planner:
   frontier:
     dilate_frontier_size: 2 #4.5  # Used to shrink the frontier back from the edges of the world
     dilate_obstacle_size: 4  #7 Used when selecting goals and computing what the "frontier" is 
-    default_expand_frontier_size: 10 # margin along the frontier where final robot position can be
+    default_expand_frontier_size: 5 #10 # margin along the frontier where final robot position can be
     # Distance away you search for frontier points
     min_dist: 2.0 # 0.5, 0.3-0.6, 0.1
     # Subsampling frontier space at this discretization

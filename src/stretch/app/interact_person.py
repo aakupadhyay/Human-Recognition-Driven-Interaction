@@ -116,7 +116,7 @@ def main(
     on_floor = FindPerson(agent)
     front = FindPerson(agent, -1.0 * np.pi / 6.0)
     
-    MAX_ATTEMPTS = 5
+    MAX_ATTEMPTS = 10
     MAX_CANDIDATES = 10
     VISITED_DIST_THRESH = 1.5  # 0.4-0.7 meters
 
@@ -158,6 +158,7 @@ def main(
 
         # ---------- Recovery message ----------
         agent.robot_say("I couldn't find anyone here. Moving to another location.")
+        time.sleep(5.0)
         
         # Mark current pose as visited
         visited_poses.append(current_xy)
