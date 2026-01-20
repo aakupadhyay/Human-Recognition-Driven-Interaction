@@ -114,11 +114,11 @@ def main(
     # agent.start(visualize_map_at_start=True, verbose=True)
        
     on_floor = FindPerson(agent)
-    front = FindPerson(agent, -1.0 * np.pi / 6.0)
+    # front = FindPerson(agent, -1.0 * np.pi / 6.0)
     
     MAX_ATTEMPTS = 10
     MAX_CANDIDATES = 10
-    VISITED_DIST_THRESH = 1.5  # 0.4-0.7 meters
+    VISITED_DIST_THRESH = 1.45  # 0.4-0.7 meters
 
     # ---------------- TIMER START ----------------
     start_time = time.time()
@@ -147,14 +147,14 @@ def main(
             break
 
         # ---------- Frontal search ----------
-        try:
-            success = front.get_task(add_rotate=False).run()
-        except Exception as e:
-            print("Task2 failed:", e)
-            success = False
+        # try:
+        #     success = front.get_task(add_rotate=False).run()
+        # except Exception as e:
+        #     print("Task2 failed:", e)
+        #     success = False
 
-        if success:
-            break
+        # if success:
+        #     break
 
         # ---------- Recovery message ----------
         agent.robot_say("I couldn't find anyone here. Moving to another location.")
