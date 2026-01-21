@@ -114,7 +114,7 @@ def main(
     # agent.start(visualize_map_at_start=True, verbose=True)
        
     on_floor = FindPerson(agent)
-    # front = FindPerson(agent, -1.0 * np.pi / 6.0)
+    front = FindPerson(agent, -1.0 * np.pi / 6.0)
     
     MAX_ATTEMPTS = 10
     MAX_CANDIDATES = 10
@@ -147,14 +147,14 @@ def main(
             break
 
         # ---------- Frontal search ----------
-        # try:
-        #     success = front.get_task(add_rotate=False).run()
-        # except Exception as e:
-        #     print("Task2 failed:", e)
-        #     success = False
+        try:
+            success = front.get_task(add_rotate=False).run()
+        except Exception as e:
+            print("Task2 failed:", e)
+            success = False
 
-        # if success:
-        #     break
+        if success:
+            break
 
         # ---------- Recovery message ----------
         agent.robot_say("I couldn't find anyone here. Moving to another location.")
@@ -188,7 +188,7 @@ def main(
         if not frontier_candidates:
             agent.robot_say("I couldn't find any reachable frontiers.")
             all_frontiers_explored = True
-            time.sleep(2.0)
+            time.sleep(3.0)
             break
 
         # ---------- Score frontiers ----------
@@ -228,8 +228,8 @@ def main(
     print(f"Total time taken: {total_time:.2f} seconds")
 
     # Final outcome
-    # if not success and not all_frontiers_explored:
-    #     agent.robot_say("I couldn't find anyone nearby.")
+    if not success and not all_frontiers_explored:
+        agent.robot_say("I couldn't find anyone nearby.")
     
 
     if show_open3d:

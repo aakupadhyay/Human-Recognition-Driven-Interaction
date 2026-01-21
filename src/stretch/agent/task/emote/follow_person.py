@@ -117,8 +117,7 @@ class FindPerson:
 
         options = FaceDetectorOptions(
             base_options=BaseOptions(
-                model_asset_path="/home/allen-marshall/cloned_repos/rehab_assistance/src/stretch/app/blaze_face_short_range.tflite" 
-                #"/home/aakriti/demo/stretch_ai/src/stretch/app/blaze_face_short_range.tflite"
+                model_asset_path="/home/aakriti/demo/stretch_ai/src/stretch/app/blaze_face_short_range.tflite"
             ),
             running_mode=VisionRunningMode.LIVE_STREAM,
             result_callback=face_op.result_callback,  # ← bind callback here
