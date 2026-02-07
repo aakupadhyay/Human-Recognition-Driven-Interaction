@@ -190,7 +190,7 @@ class UpdateOperation(ManagedOperation):
             )
             
             # ---- CHECK INSTANCE SCORE ----
-            if score < 0.6:
+            if score < 0.7:
                 self.warn(
                     f"Skipping instance {i} ({name}) due to low confidence: {score:.2f} < 0.6"
                 )

@@ -15,9 +15,8 @@ import click
 import numpy as np
 # import random
 import math
-# import threading
-# import rclpy
-# import cv2
+import matplotlib.pyplot as plt
+from brokenaxes import brokenaxes
 
 from stretch.agent import RobotAgent, RobotClient
 # from stretch.core.task import Task
@@ -41,20 +40,29 @@ def pose_distance(p1, p2):
     x2, y2 = pose_xy(p2)
     return math.hypot(x1 - x2, y1 - y2)
 
-def min_distance_to_set(pose, visited_xy):
-    x, y = pose_xy(pose)
-    return min(
-        math.hypot(x - vx, y - vy)
-        for vx, vy in visited_xy
-    ) if visited_xy else float("inf")
+# def min_distance_to_set(pose, visited_xy):
+#     x, y = pose_xy(pose)
+#     return min(
+#         math.hypot(x - vx, y - vy)
+#         for vx, vy in visited_xy
+#     ) if visited_xy else float("inf")
 
 def score_frontier(pose, current_pose, visited_poses,
-                alpha=1.0, beta=1.5, gamma=0.0):
+                alpha, beta, gamma=0.0):
     """
     Higher score = better frontier
     """
-    d_robot = pose_distance(pose, current_pose)
-    d_visited = min_distance_to_set(pose, visited_poses)
+    d_robot = pose_distance(pose, current_pose) / 2.0
+    d_visited = np.mean([pose_distance(pose, v) for v in visited_poses]) / 2.0
+    # centroid = np.mean(visited_poses, axis=0)
+    # d_visited = pose_distance(pose, centroid) / 2.0
+    
+    # d_robot = np.tanh(d_robot)
+    # d_visited = np.tanh(d_visited)
+    # print(
+    #             f"d_robot={d_robot:.2f}, "
+    #             f"d_visited={d_visited:.2f}" 
+    #         )
 
     # we don't query clearance yet -- future work
     d_obstacle = 0.0  # set >0 if you can query clearance
@@ -118,7 +126,7 @@ def main(
     
     MAX_ATTEMPTS = 10
     MAX_CANDIDATES = 10
-    VISITED_DIST_THRESH = 1.45  # 0.4-0.7 meters
+    VISITED_DIST_THRESH = 1.45 #meters
 
     # ---------------- TIMER START ----------------
     start_time = time.time()
@@ -128,29 +136,29 @@ def main(
     success = False
     all_frontiers_explored = False
     space = agent.space
-
+    
     while not success and attempt < MAX_ATTEMPTS:
         attempt += 1
         print(f"\n=== Search attempt {attempt}/{MAX_ATTEMPTS} ===")
 
         current = robot.get_base_pose()
         current_xy = pose_xy(current)
+        
+        # ---------- Frontal search ----------
+        try:
+            success = front.get_task(add_rotate=False).run()
+        except Exception as e:
+            print("Task2 failed:", e)
+            success = False
+
+        if success:
+            break
 
         # ---------- Floor search ----------
         try:
             success = on_floor.get_task(add_rotate=False).run()
         except Exception as e:
             print("Task1 failed:", e)
-            success = False
-
-        if success:
-            break
-
-        # ---------- Frontal search ----------
-        try:
-            success = front.get_task(add_rotate=False).run()
-        except Exception as e:
-            print("Task2 failed:", e)
             success = False
 
         if success:
@@ -199,7 +207,7 @@ def main(
                 current_pose=current,
                 visited_poses=visited_poses,
                 alpha=1.0,   # exploration weight
-                beta=1.5     # revisit avoidance weight
+                beta=1.5     # revisit avoidance weight --1.5
             )
             scored_frontiers.append((score, pose))
 
@@ -208,7 +216,7 @@ def main(
         best_score, candidate = scored_frontiers[0]
 
         print(f"Moving to frontier with score {best_score:.2f}")
-
+        
         # ---------- Move robot ----------
         try:
             robot.move_base_to(candidate, blocking=True, timeout=30.0)
@@ -217,7 +225,7 @@ def main(
             # If navigation fails, mark candidate as visited to avoid retry
             visited_poses.append(pose_xy(candidate))
             continue
-
+            
     # ---------------- TIMER END ----------------
     end_time = time.time()
     total_time = end_time - start_time
@@ -229,22 +237,16 @@ def main(
 
     # Final outcome
     if not success and not all_frontiers_explored:
+        # print("No person found")
         agent.robot_say("I couldn't find anyone nearby.")
-    
-
+        
     if show_open3d:
         agent.show_map()
 
     print("Done.")
-    # print("Active threads:")
-    # for t in threading.enumerate():
-    #     print(t.name, t.daemon)
-        
+           
     agent.stop_realtime_updates()
-    robot.stop()
-    # rclpy.shutdown()
-    # cv2.destroyAllWindows()
-    
+    robot.stop()   
 
 
 if __name__ == "__main__":
