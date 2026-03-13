@@ -101,7 +101,7 @@ class RobotAgent:
         # If the semantic sensor is not provided, we will create it from the config file
         if create_semantic_sensor:
             if self.semantic_sensor is not None:
-                logger.warn(
+                logger.warning(
                     "Semantic sensor is already provided, but create_semantic_sensor is set to True. Ignoring the provided semantic sensor."
                 )
             # Create a semantic sensor
@@ -138,7 +138,7 @@ class RobotAgent:
             "agent/use_realtime_updates", False
         )
         if not enable_realtime_updates and self._realtime_updates:
-            logger.warn("Real-time updates are enabled via command line.")
+            logger.warning("Real-time updates are enabled via command line.")
         if self._realtime_updates:
             logger.alert("Real-time updates are enabled!")
 

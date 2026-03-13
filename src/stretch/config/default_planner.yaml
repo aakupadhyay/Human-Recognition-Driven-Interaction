@@ -136,7 +136,7 @@ scene_graph:
 
 # Navigation space - used for motion planning and computing goals.
 motion_planner:
-  step_size: 0.05
+  step_size: 0.07 #0.05
   rotation_step_size: 0.1
   algorithm: "rrt_connect"  # ["rrt", "rrt_connect", "a_star"]
   simplify_plans: True
