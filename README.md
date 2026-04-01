@@ -20,7 +20,7 @@ On both the robot and your local machine, install the vision processing library:
 pip install mediapipe
 
 
-### 2. **Local Environment**
+**2. Local Environment**
 On your GPU workstation, ensure you are using a virtual environment before running the application:
 ```bash
 source venv/bin/activate  # Or your specific env command
