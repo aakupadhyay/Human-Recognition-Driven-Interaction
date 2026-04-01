@@ -8,7 +8,7 @@ This project enables the Hello Robot Stretch to recognize and navigate to humans
 
 1.  **Prepare the Robot:** Ensure you have the core `stretch_ai` repository installed on your robot.
     * **Source:** [hello-robot/stretch_ai](https://github.com/hello-robot/stretch_ai)
-2.  **Clone this Project:** Pull this repository onto your **local workstation**.
+2.  **Clone this Project:** Pull this repository onto your **local workstation** and follow the same installation instruction as the `stretch_ai` repo.
 
 ---
 
