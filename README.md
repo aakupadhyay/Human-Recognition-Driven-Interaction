@@ -1,4 +1,4 @@
-# Human Recognition-Driven Navigation
+# Human Recognition-Driven Interaction
 
 This project enables the Hello Robot Stretch to recognize and navigate to humans, specifically designed to support older adults in assistive environments.
 
