@@ -136,7 +136,7 @@ scene_graph:
 
 # Navigation space - used for motion planning and computing goals.
 motion_planner:
-  step_size: 0.07 #0.05
+  step_size: 0.05
   rotation_step_size: 0.1
   algorithm: "rrt_connect"  # ["rrt", "rrt_connect", "a_star"]
   simplify_plans: True
@@ -149,13 +149,13 @@ motion_planner:
   shortcut_iter: 100
   # Parameters for frontier exploration using the motion planner.
   frontier:
-    dilate_frontier_size: 2 #4.5  # Used to shrink the frontier back from the edges of the world
-    dilate_obstacle_size: 4  #7 Used when selecting goals and computing what the "frontier" is 
+    dilate_frontier_size: 2 # Used to shrink the frontier back from the edges of the world
+    dilate_obstacle_size: 4  # Used when selecting goals and computing what the "frontier" is 
     default_expand_frontier_size: 10 # margin along the frontier where final robot position can be
     # Distance away you search for frontier points
-    min_dist: 1.6 # 0.5, 0.3-0.6, 0.1
+    min_dist: 1.6 #0.1
     # Subsampling frontier space at this discretization
-    step_dist: 0.45 #0.2
+    step_dist: 0.2
   goals:
     manipulation_radius: 0.66
 

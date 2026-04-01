@@ -93,73 +93,9 @@ class NavigateToObjectOperation(ManagedOperation):
         assert (
             self.plan is not None
         ), "Did you make sure that we had a plan? You should call can_start() before run()."
-        # self.robot.execute_trajectory(self.plan, final_timeout=10.0)
-        trajectory = self.plan.trajectory
-
-        for waypoint in trajectory:
-
-            # Update map only during navigation
-            self.agent.update()
-
-            start = self.robot.get_base_pose()
-
-            # Check if obstacle blocks the path
-            if not self.navigation_space.is_valid(start):
-
-                self.warn("Obstacle detected. Waiting for it to clear...")
-
-                wait_time = 0
-                max_wait = 2.0  # seconds
-
-                while wait_time < max_wait:
-
-                    time.sleep(0.5)
-                    wait_time += 0.5
-
-                    self.agent.update()
-
-                    if self.navigation_space.is_valid(self.robot.get_base_pose()):
-                        self.cheer("Path cleared. Continuing.")
-                        break
-
-                # If still blocked → replan
-                if not self.navigation_space.is_valid(self.robot.get_base_pose()):
-
-                    self.warn("Path still blocked. Replanning...")
-
-                    if self.for_manipulation:
-                        new_plan = self.agent.plan_to_instance_for_manipulation(
-                            self.get_target(),
-                            start=self.robot.get_base_pose(),
-                        )
-                    else:
-                        new_plan = self.agent.plan_to_instance(
-                            self.get_target(),
-                            start=self.robot.get_base_pose(),
-                        )
-
-                    if not new_plan.success:
-                        self.error("Replan failed.")
-                        return False
-
-                    trajectory = new_plan.trajectory
-                    continue
-
-            # Move if path valid
-            self.robot.move_base_to(
-                waypoint.state,
-                blocking=True,
-                timeout=10.0,
-            )
-
-        # Orient the robot towards the object and use the end effector camera to pick it up
-        # xyt = self.plan.trajectory[-1].state
-        # self.robot.move_base_to(xyt + np.array([0, 0, np.pi / 2]), blocking=True, timeout=30.0)
-        # if self.be_precise:
-        #     self.warn("Moving again to make sure we're close enough to the goal.")
-        #     self.robot.move_base_to(xyt, blocking=True, timeout=30.0)
+        self.robot.execute_trajectory(self.plan, final_timeout=10.0)
         
-        # ---- 2. LOCAL APPROACH (GETS CLOSER TO OBJECT) ----
+        # ---- LOCAL APPROACH (GETS CLOSER TO OBJECT) ----
         obj_xy = np.array(self.get_target().get_center()[:2], dtype=float)
         base_xy = np.array(self.robot.get_base_pose()[:2], dtype=float)
 

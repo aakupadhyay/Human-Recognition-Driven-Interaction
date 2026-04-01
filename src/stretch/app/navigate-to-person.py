@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) Hello Robot, Inc.
+# Copyright (c) The University of Tulsa.
 # All rights reserved.
 #
 # This source code is licensed under the license found in the LICENSE file in the root directory
@@ -13,10 +13,10 @@
 import time
 import click
 import numpy as np
-# import random
+
 import math
-import matplotlib.pyplot as plt
-from brokenaxes import brokenaxes
+# import matplotlib.pyplot as plt
+# from brokenaxes import brokenaxes
 
 from stretch.agent import RobotAgent, RobotClient
 # from stretch.core.task import Task
@@ -40,32 +40,15 @@ def pose_distance(p1, p2):
     x2, y2 = pose_xy(p2)
     return math.hypot(x1 - x2, y1 - y2)
 
-# def min_distance_to_set(pose, visited_xy):
-#     x, y = pose_xy(pose)
-#     return min(
-#         math.hypot(x - vx, y - vy)
-#         for vx, vy in visited_xy
-#     ) if visited_xy else float("inf")
-
 def score_frontier(pose, current_pose, visited_poses,
-                alpha, beta, gamma=0.0):
+                alpha, beta, gamma=0.5):
     """
     Higher score = better frontier
     """
     d_robot = pose_distance(pose, current_pose) / 2.0
     d_visited = np.mean([pose_distance(pose, v) for v in visited_poses]) / 2.0
-    # centroid = np.mean(visited_poses, axis=0)
-    # d_visited = pose_distance(pose, centroid) / 2.0
     
-    # d_robot = np.tanh(d_robot)
-    # d_visited = np.tanh(d_visited)
-    # print(
-    #             f"d_robot={d_robot:.2f}, "
-    #             f"d_visited={d_visited:.2f}" 
-    #         )
-
-    # we don't query clearance yet -- future work
-    d_obstacle = 0.0  # set >0 if you can query clearance
+    d_obstacle = 1.0  # clearance
 
     score = (
         alpha * d_robot +
@@ -106,20 +89,13 @@ def main(
             device_id=device_id,
             verbose=verbose,
             confidence_threshold=0.5,
-            # enable_rerun_server=(not show_open3d),
         )
     else:
         semantic_sensor = None
     agent = RobotAgent(robot, robot.parameters, semantic_sensor, use_instance_memory=True, create_semantic_sensor=True, enable_realtime_updates=False)
-    # agent = RobotAgent(robot, robot.parameters, semantic_sensor, enable_realtime_updates=False)
-
-    # observation = robot.get_observation()
-    # print("Printing Camera Pose",observation.camera_pose)
+    
     robot.move_to_nav_posture()
     robot.move_base_to([0.0, 0.0, 0.0], blocking=True, timeout=30.0)
-    
-    # Show intermediate maps
-    # agent.start(visualize_map_at_start=True, verbose=True)
        
     on_floor = FindPerson(agent)
     front = FindPerson(agent, -1.0 * np.pi / 6.0)
