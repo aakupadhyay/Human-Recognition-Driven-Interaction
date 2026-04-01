@@ -40,7 +40,7 @@ Open two separate terminal windows on the robot's computer:
    ```bash
    python stretch_robot_home.py
    ```
-2. **Start the ROS2 Bridge**
+2. **Start the ROS2 Bridge:**
    Navigate into the `stretch_ai` folder on the robot and execute:
    ```bash
    ./scripts/run_stretch_ai_ros2_bridge_server.sh
