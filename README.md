@@ -8,22 +8,25 @@ This project enables the Hello Robot Stretch to recognize and navigate to humans
 
 1.  **Prepare the Robot:** Ensure you have the core `stretch_ai` repository installed on your robot.
     * **Source:** [hello-robot/stretch_ai](https://github.com/hello-robot/stretch_ai)
-2.  **Clone this Project:** Pull this repository onto both your **robot** and your **local workstation**.
+2.  **Clone this Project:** Pull this repository onto your **local workstation**.
 
 ---
 
 ## 🛠 Software Requirements
 
 ### 1. Dependencies
-On both the robot and your local machine, install the vision processing library:
+On your local machine, install the Google MediaPipe library:
 ```bash
 pip install mediapipe
 ```
 
-### 2. Local Environment
+### 2. Virtual Environment
 On your GPU workstation, ensure you are using a virtual environment before running the application:
 ```bash
+# Create a virtual environment named 'venv'
+python3 -m venv venv
 source venv/bin/activate  # Or your specific env command
+deactivate # when done working within the env
 ```
 ---
 ## 🏃 How to Run
