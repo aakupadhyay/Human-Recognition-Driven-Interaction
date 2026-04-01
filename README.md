@@ -17,12 +17,14 @@ This project enables the Hello Robot Stretch to recognize and navigate to humans
 ### 1. Dependencies
 On both the robot and your local machine, install the vision processing library:
 ```bash
-pip install mediapipe ```
+pip install mediapipe
+
 
 ### 2. **Local Environment**
 On your GPU workstation, ensure you are using a virtual environment before running the application:
 ```bash
-source venv/bin/activate  # Or your specific env command ```
+source venv/bin/activate  # Or your specific env command
+
 
 ---
 
