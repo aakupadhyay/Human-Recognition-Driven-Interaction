@@ -100,7 +100,7 @@ def main(
     on_floor = FindPerson(agent)
     front = FindPerson(agent, -1.0 * np.pi / 6.0)
     
-    MAX_ATTEMPTS = 1
+    MAX_ATTEMPTS = 10
     MAX_CANDIDATES = 10
     VISITED_DIST_THRESH = 1.45 #meters
 
