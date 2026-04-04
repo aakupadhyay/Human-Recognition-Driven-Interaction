@@ -47,8 +47,9 @@ Open two separate terminal windows on the robot's computer:
    ./scripts/run_stretch_ai_ros2_bridge_server.sh
    ```
 ### Step 2: On Your Local Machine
-Once the robot server is active, launch the navigation module:
+Once the robot server is active, set the robot IP address on your GPU machine and launch the navigation module:
 ```bash
+./scripts/set_robot_ip.sh #.#.#.# 
 python -m stretch.app.navigate-to-person
 ```
 ---
