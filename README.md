@@ -24,8 +24,8 @@ pip install mediapipe
 On your GPU workstation, ensure you are using a virtual environment before running the application:
 ```bash
 # Create a virtual environment named 'venv'
-python3 -m venv venv
-source venv/bin/activate  # Or your specific env command
+python3 -m venv .venv
+source .venv/bin/activate  # Or your specific env command
 deactivate # when done working within the env
 ```
 ---
