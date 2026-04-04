@@ -38,7 +38,7 @@ Open two separate terminal windows on the robot's computer:
 
 1. **Home the Robot:**
    ```bash
-   python stretch_robot_home.py
+   python3 stretch_robot_home.py
    ```
 2. **Start the ROS2 Bridge:**
    
@@ -50,7 +50,7 @@ Open two separate terminal windows on the robot's computer:
 Once the robot server is active, set the robot IP address on your GPU machine and launch the navigation module:
 ```bash
 ./scripts/set_robot_ip.sh #.#.#.# 
-python -m stretch.app.navigate-to-person
+python3 -m stretch.app.navigate-to-person
 ```
 ---
 ## 📄 Citation
