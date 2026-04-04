@@ -152,16 +152,11 @@ class UpdateOperation(ManagedOperation):
             for instance in instances_all:
                 name = self.agent.semantic_sensor.get_class_name_for_id(instance.category_id)
                 print(f"found instance with name = {name}")
-
+                # optimized the instance score comparison
                 if name == self.target_object:
                     print(f"name matches target_object! ({name} = {self.target_object})")
                     matching_instances.append(instance)
-                    matching_scores.append(instance.score)  # <-- score stays aligned
-                
-                print(
-                    f"DEBUG: instance global_id={instance.global_id}, "
-                    f"instance.score={instance.score}"
-                )
+                    matching_scores.append(instance.score)
 
             instances = matching_instances
             scores = np.array(matching_scores)

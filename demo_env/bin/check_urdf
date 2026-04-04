@@ -1,3 +1,0 @@
-#!/home/aakriti/demo/stretch_ai/demo_env/bin/python3
-from cmeel.run import cmeel_run
-cmeel_run()
