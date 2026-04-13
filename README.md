@@ -60,7 +60,7 @@ This work is scheduled to appear at the **2026 ARSO** conference. Please cite ou
 ```bibtex
 @inproceedings{upadhyay2026assistive,
   title={Human Recognition-Driven Interaction with Hello Robot Stretch for Supporting Older Adults},
-  author={Upadhyay, Aakriti and Gamble, Rose},
+  author={Upadhyay, Aakriti and Gamble, Rose and Marshall, Allen},
   booktitle={Proceedings of the 2026 IEEE International Conference on Advanced Robotics and its Social Impacts (ARSO)},
   year={2026},
   organization={IEEE},
