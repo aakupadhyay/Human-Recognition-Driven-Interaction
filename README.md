@@ -67,5 +67,6 @@ This work is scheduled to appear at the **2026 ARSO** conference. Please cite ou
   note={To appear}
 }
 ```
-### THANK YOU
+---
+### Thank You
 We would like to thank the Hello Robot team for open-sourcing the development code upon which this project is built.
